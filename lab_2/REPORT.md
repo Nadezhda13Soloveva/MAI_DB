@@ -154,7 +154,7 @@ INSERT INTO users (nickname, email, hashed_password) VALUES
 ('user1', 'user1@example.com', 'hash1_pass1'),
 ('user2', 'user2@example.com', 'hash2_pass2'),
 ('user3', 'user3@example.com', 'hash3_pass3'),
-('user4', 'user4@example.com', 'hash4_pass4'),
+('user4', 'user4@example.com', 'hash4_pass4');
 ```
 
 ```sql
@@ -162,7 +162,7 @@ INSERT INTO languages (name) VALUES
 ('English'),
 ('Spanish'),
 ('French'),
-('German'),
+('German');
 ```
 
 ```sql
@@ -171,7 +171,7 @@ INSERT INTO user_languages (user_id, language_id) VALUES
 (1, 2), -- user1 изучает Spanish
 (2, 1), -- user2 изучает English
 (3, 3), -- user3 изучает French
-(4, 4), -- user4 изучает German
+(4, 4); -- user4 изучает German
 ```
 
 ```sql
@@ -179,7 +179,7 @@ INSERT INTO collections (language_id, creator_id, name) VALUES
 (1, 1, 'English Basics'),
 (1, 2, 'Advanced English'),
 (2, 1, 'Spanish Phrases'),
-(3, 3, 'French Verbs'),
+(3, 3, 'French Verbs');
 ```
 
 ```sql
@@ -203,7 +203,7 @@ INSERT INTO collection_words (collection_id, word_id) VALUES
 (3, 4), -- Spanish Phrases: Hola
 (3, 5), -- Spanish Phrases: Gracias
 (4, 6), -- French Verbs: Bonjour
-(4, 7), -- French Verbs: Merci
+(4, 7); -- French Verbs: Merci
 ```
 
 ```sql
@@ -211,7 +211,7 @@ INSERT INTO exercises (language_id, exercise_name, type, difficulty_level) VALUE
 (1, 'Basic English Words', 'Flashcards', 'Beginner'),
 (1, 'English Grammar Test', 'Test', 'Intermediate'),
 (2, 'Spanish Greetings Practice', 'Flashcards', 'Beginner'),
-(3, 'French Verb Conjugation', 'Quiz', 'Intermediate'),
+(3, 'French Verb Conjugation', 'Quiz', 'Intermediate');
 ```
 
 ```sql
@@ -224,7 +224,7 @@ INSERT INTO exercise_words (exercise_id, word_id) VALUES
 (3, 4), -- Spanish Greetings Practice: Hola
 (3, 5), -- Spanish Greetings Practice: Gracias
 (4, 6), -- French Verb Conjugation: Bonjour
-(4, 7), -- French Verb Conjugation: Merci
+(4, 7); -- French Verb Conjugation: Merci
 ```
 
 ```sql
@@ -234,8 +234,7 @@ INSERT INTO attempts (user_id, exercise_id, attempt_date_time_start, attempt_dat
 (2, 1, '2023-10-26 10:05:00', '2023-10-26 10:12:00', 70),
 (3, 4, '2023-10-26 12:00:00', '2023-10-26 12:20:00', 95),
 (4, 5, '2023-10-26 13:00:00', '2023-10-26 13:30:00', 80),
-(1, 2, '2023-10-28 09:00:00', '2023-10-28 09:25:00', 75),
-(5, 5, '2023-10-28 14:00:00', '2023-10-28 14:10:00', 60);
+(1, 2, '2023-10-28 09:00:00', '2023-10-28 09:25:00', 75);
 ```
 
 ### 4.3. Простые DML-операции
@@ -473,7 +472,7 @@ SELECT
     u.nickname,
     u.email,
     AVG(a.result) AS overall_average_score,
-    COUNT(a.id) AS total_attempts,
+    COUNT(a.user_id) AS total_attempts,
     MAX(a.attempt_date_time_end) AS last_activity
 FROM
     users u
@@ -482,7 +481,7 @@ JOIN
 GROUP BY
     u.id, u.nickname, u.email
 HAVING
-    COUNT(a.id) > 0 -- Учитываем только пользователей с хотя бы одной попыткой
+    COUNT(a.user_id) > 0 -- Учитываем только пользователей с хотя бы одной попыткой
 ORDER BY
     overall_average_score DESC
 LIMIT 5;
