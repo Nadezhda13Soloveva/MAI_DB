@@ -27,21 +27,25 @@ LEFT JOIN
 ORDER BY
     c.name, w.word_text;
 
--- 3. Получить упражнения и слова, которые в них используются, для определенного языка (например, English)
+-- 3. Получить упражнения, их типы и слова, которые в них используются, для определенного языка (например, English)
 SELECT
     e.exercise_name,
-    e.type,
+    et.name AS exercise_type,
     e.difficulty_level,
     w.word_text,
     w.translation
 FROM
     exercises e
 JOIN
+    exercise_types et ON e.exercise_type_id = et.id
+JOIN
     exercise_words ew ON e.id = ew.exercise_id
 JOIN
     words w ON ew.word_id = w.id
 JOIN
-    languages l ON e.language_id = l.id
+    collections c ON w.language_id = c.language_id -- предполагаем, что язык упражнения соответствует языку слова в коллекции
+JOIN
+    languages l ON c.language_id = l.id
 WHERE
     l.name = 'English';
 
@@ -49,9 +53,9 @@ WHERE
 SELECT
     u.nickname,
     e.exercise_name,
-    a.attempt_date_time_start,
-    a.attempt_date_time_end,
-    a.result
+    a.started_at,
+    a.completed_at,
+    a.score
 FROM
     attempts a
 JOIN
@@ -59,4 +63,4 @@ JOIN
 JOIN
     exercises e ON a.exercise_id = e.id
 ORDER BY
-    u.nickname, a.attempt_date_time_start;
+    u.nickname, a.started_at;

@@ -5,8 +5,8 @@ SELECT
     u.nickname,
     l.name AS language_name,
     COUNT(DISTINCT a.exercise_id) AS completed_exercises,
-    AVG(a.result) AS average_score,
-    MAX(a.attempt_date_time_end) AS last_attempt_date
+    AVG(a.score) AS average_score,
+    MAX(a.completed_at) AS last_attempt_date
 FROM
     users u
 JOIN
@@ -14,7 +14,13 @@ JOIN
 JOIN
     languages l ON ul.language_id = l.id
 LEFT JOIN
-    exercises e ON l.id = e.language_id
+    collections c ON l.id = c.language_id
+LEFT JOIN
+    words w ON c.language_id = w.language_id
+LEFT JOIN
+    exercise_words ew ON w.id = ew.word_id
+LEFT JOIN
+    exercises e ON ew.exercise_id = e.id
 LEFT JOIN
     attempts a ON u.id = a.user_id AND e.id = a.exercise_id
 GROUP BY
@@ -49,9 +55,9 @@ SELECT
     u.id AS user_id,
     u.nickname,
     u.email,
-    AVG(a.result) AS overall_average_score,
+    AVG(a.score) AS overall_average_score,
     COUNT(a.user_id) AS total_attempts,
-    MAX(a.attempt_date_time_end) AS last_activity
+    MAX(a.completed_at) AS last_activity
 FROM
     users u
 JOIN

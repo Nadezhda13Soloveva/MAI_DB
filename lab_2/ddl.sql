@@ -1,3 +1,15 @@
+-- Удаление таблиц, если они существуют (для чистого перезапуска)
+DROP TABLE IF EXISTS attempts CASCADE;
+DROP TABLE IF EXISTS exercise_words CASCADE;
+DROP TABLE IF EXISTS collection_words CASCADE;
+DROP TABLE IF EXISTS user_languages CASCADE;
+DROP TABLE IF EXISTS exercises CASCADE;
+DROP TABLE IF EXISTS collections CASCADE;
+DROP TABLE IF EXISTS words CASCADE;
+DROP TABLE IF EXISTS exercise_types CASCADE;
+DROP TABLE IF EXISTS languages CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
 -- Создание таблицы Пользователи
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -50,14 +62,19 @@ CREATE TABLE collection_words (
     FOREIGN KEY (word_id) REFERENCES words(id) ON DELETE CASCADE
 );
 
+-- Создание таблицы Типы упражнений
+CREATE TABLE exercise_types (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL
+);
+
 -- Создание таблицы Упражнения
 CREATE TABLE exercises (
     id SERIAL PRIMARY KEY,
-    language_id INT NOT NULL,
+    exercise_type_id INT NOT NULL,
     exercise_name VARCHAR(255) NOT NULL,
-    type VARCHAR(255) NOT NULL,
     difficulty_level VARCHAR(255),
-    FOREIGN KEY (language_id) REFERENCES languages(id) ON DELETE CASCADE
+    FOREIGN KEY (exercise_type_id) REFERENCES exercise_types(id) ON DELETE CASCADE
 );
 
 -- Промежуточная таблица для связи Упражнения <-> Слова (M:N)
@@ -71,12 +88,12 @@ CREATE TABLE exercise_words (
 
 -- Создание таблицы Попытки
 CREATE TABLE attempts (
+    id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
     exercise_id INT NOT NULL,
-    attempt_date_time_start TIMESTAMP NOT NULL,
-    attempt_date_time_end TIMESTAMP,
-    result INT CHECK (result >= 0 AND result <= 100), -- баллов из 100, ограничение: от 0 до 100
-    PRIMARY KEY (user_id, exercise_id, attempt_date_time_start), -- Композитный ключ для уникальности попыток
+    started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP,
+    score INT CHECK (score >= 0 AND score <= 100),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE
 );

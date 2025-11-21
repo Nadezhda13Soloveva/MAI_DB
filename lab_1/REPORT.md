@@ -75,19 +75,23 @@
     - Перевод   
     - Транскрипция  
 
+**Типы упражнений:**
+    - ID
+    - Название
+
 **Упражнения:**     
     - ID    
+    - Тип упражнения ID
     - Название упражнения   
-    - Язык ID   
-    - Тип упражнения    
     - Уровень сложности     
 
 **Попытки:**    
+    - ID
     - Пользователь ID   
     - Упражнение ID     
     - Дата начала прохождения   
     - Дата конца прохождения    
-    - Результат 
+    - Результат (баллы от 0 до 100)
 
 #### 4.2.2 Связи
 
@@ -106,72 +110,78 @@
 hide circle
 left to right direction
 
-entity "Пользователь" as User {
+entity "User" as User {
   * ID : int
   --
-  Никнейм : varchar(255)
-  Почта : varchar(255)
-  Хэш-пароль : varchar(255)
+  Nickname : varchar(255)
+  Email : varchar(255)
+  Hashed_password : varchar(255)
 }
 
-entity "Язык" as Language {
+entity "Language" as Language {
   * ID : int
   --
-  Название : varchar(255)
+  Name : varchar(255)
 }
 
-entity "Коллекция" as Collection {
+entity "Collection" as Collection {
   * ID : int
   --
-  Название : varchar(255)
-  Язык ID : int
-  Создатель ID : int
+  Name : varchar(255)
+  Language ID : int
+  Creator ID : int
 }
 
-entity "Слово" as Word {
+entity "Word" as Word {
   * ID : int
   --
-  Язык ID : int
-  Слово : varchar(255)
-  Перевод : varchar(255)
-  Транскрипция : varchar(255)
+  Language ID : int
+  Word : varchar(255)
+  Translation : varchar(255)
+  Transcription : varchar(255)
 }
 
-entity "Упражнение" as Exercise {
+entity "ExerciseType" as ExerciseType {
   * ID : int
   --
-  Название упражнения : varchar(255)
-  Язык ID : int
-  Тип упражнения : varchar(255)
-  Уровень сложности : varchar(255)
+  Name : varchar(100)
 }
 
-entity "Попытка" as Attempt {
-  * Пользователь ID : int
-  * Упражнение ID : int
+entity "Exercise" as Exercise {
+  * ID : int
   --
-  Дата начала прохождения : datetime
-  Дата конца прохождения : datetime
-  Результат : int
+  Exercise Type ID : int
+  Exercise Name : varchar(255)
+  Difficulty Level : varchar(255)
 }
 
-' Промежуточные таблицы для связей M:N
-entity "Пользователь_Язык" as UserLanguage {
-  * Пользователь ID : int
-  * Язык ID : int
+entity "Attempt" as Attempt {
+  * ID : int
+  --
+  User ID : int
+  Exercise ID : int
+  Started At : datetime
+  Completed At : datetime
+  Score : int
 }
 
-entity "Коллекция_Слово" as CollectionWord {
-  * Коллекция ID : int
-  * Слово ID : int
+' Junction tables for M:N relationships
+entity "User_Language" as UserLanguage {
+  * User ID : int
+  * Language ID : int
 }
 
-entity "Упражнение_Слово" as ExerciseWord {
-  * Упражнение ID : int
-  * Слово ID : int
+entity "Collection_Word" as CollectionWord {
+  * Collection ID : int
+  * Word ID : int
 }
 
-' Определение связей
+entity "Exercise_Word" as ExerciseWord {
+  * Exercise ID : int
+  * Word ID : int
+}
+
+' Defining relationships
 User ||--o{ UserLanguage
 Language ||--o{ UserLanguage
 
@@ -180,6 +190,8 @@ Collection }o--|| Language
 
 Collection ||--o{ CollectionWord
 Word ||--o{ CollectionWord
+
+ExerciseType ||--o{ Exercise
 
 Exercise ||--o{ ExerciseWord
 Word ||--o{ ExerciseWord
@@ -190,7 +202,7 @@ Exercise ||--o{ Attempt
 ```
 Или вот магия  картиночек
 
-![ER Diagram](er_diagram.png)
+![ER Diagram](er_diagramm.png)
 
 ### 4.4 SQL DDL скрипт модели данных
 
@@ -247,14 +259,19 @@ CREATE TABLE collection_words (
     FOREIGN KEY (word_id) REFERENCES words(id) ON DELETE CASCADE
 );
 
+-- Создание таблицы Типы упражнений
+CREATE TABLE exercise_types (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL
+);
+
 -- Создание таблицы Упражнения
 CREATE TABLE exercises (
     id SERIAL PRIMARY KEY,
-    language_id INT NOT NULL,
+    exercise_type_id INT NOT NULL,
     exercise_name VARCHAR(255) NOT NULL,
-    type VARCHAR(255) NOT NULL,
     difficulty_level VARCHAR(255),
-    FOREIGN KEY (language_id) REFERENCES languages(id) ON DELETE CASCADE
+    FOREIGN KEY (exercise_type_id) REFERENCES exercise_types(id) ON DELETE CASCADE
 );
 
 -- Промежуточная таблица для связи Упражнения <-> Слова (M:N)
@@ -268,12 +285,12 @@ CREATE TABLE exercise_words (
 
 -- Создание таблицы Попытки
 CREATE TABLE attempts (
+    id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
     exercise_id INT NOT NULL,
-    attempt_date_time_start TIMESTAMP NOT NULL,
-    attempt_date_time_end TIMESTAMP,
-    result INT, -- баллов из 100
-    PRIMARY KEY (user_id, exercise_id, attempt_date_time_start), -- Композитный ключ для уникальности попыток
+    started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP,
+    score INT CHECK (score >= 0 AND score <= 100),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE
 );
@@ -327,24 +344,27 @@ CREATE TABLE attempts (
     *   `PRIMARY KEY (collection_id, word_id)`: Композитный первичный ключ, обеспечивающий уникальность пары (коллекция, слово).
     *   `FOREIGN KEY ... ON DELETE CASCADE`: Каскадное удаление связей при удалении коллекции или слова.
 
-7.  **`exercises`**
+7.  **`exercise_types`**
+    *   `id`: `SERIAL PRIMARY KEY` – уникальный идентификатор типа упражнения.
+    *   `name`: `VARCHAR(100) UNIQUE NOT NULL` – уникальное название типа упражнения (например, 'flashcards', 'multiple_choice', 'typing'), обязательно.
+
+8.  **`exercises`**
     *   `id`: `SERIAL PRIMARY KEY` – уникальный идентификатор упражнения.
-    *   `language_id`: `INT NOT NULL` – внешний ключ, ссылающийся на `languages.id`. Указывает язык, для которого предназначено упражнение. Обязателен.
+    *   `exercise_type_id`: `INT NOT NULL` – внешний ключ, ссылающийся на `exercise_types.id`. Указывает тип упражнения. Обязателен.
     *   `exercise_name`: `VARCHAR(255) NOT NULL` – название упражнения.
-    *   `type`: `VARCHAR(255) NOT NULL` – тип упражнения (например, "карточки", "тест"), обязателен.
     *   `difficulty_level`: `VARCHAR(255)` – уровень сложности упражнения, необязателен.
 
-8.  **`exercise_words`** (Промежуточная таблица для M:N связи между `exercises` и `words`)
+9.  **`exercise_words`** (Промежуточная таблица для M:N связи между `exercises` и `words`)
     *   `exercise_id`: `INT NOT NULL` – внешний ключ, ссылающийся на `exercises.id`.
     *   `word_id`: `INT NOT NULL` – внешний ключ, ссылающийся на `words.id`.
     *   `PRIMARY KEY (exercise_id, word_id)`: Композитный первичный ключ, обеспечивающий уникальность пары (упражнение, слово).
     *   `FOREIGN KEY ... ON DELETE CASCADE`: Каскадное удаление связей при удалении упражнения или слова.
 
-9.  **`attempts`**
+10. **`attempts`**
+    *   `id`: `SERIAL PRIMARY KEY` – уникальный идентификатор попытки.
     *   `user_id`: `INT NOT NULL` – внешний ключ, ссылающийся на `users.id`. Указывает пользователя, совершившего попытку. Обязателен.
     *   `exercise_id`: `INT NOT NULL` – внешний ключ, ссылающийся на `exercises.id`. Указывает упражнение, для которого совершена попытка. Обязателен.
-    *   `attempt_date_time_start`: `TIMESTAMP NOT NULL` – время начала попытки, обязательно.
-    *   `attempt_date_time_end`: `TIMESTAMP` – время окончания попытки, необязательно (попытка может быть еще в процессе).
-    *   `result`: `INT` – результат попытки (например, баллов из 100), необязательно, может быть null до завершения попытки.
-    *   `PRIMARY KEY (user_id, exercise_id, attempt_date_time_start)`: Композитный первичный ключ, позволяющий пользователю совершать несколько попыток одного и того же упражнения в разное время.
+    *   `started_at`: `TIMESTAMP NOT NULL` – время начала попытки, обязательно, по умолчанию устанавливается на текущее время.
+    *   `completed_at`: `TIMESTAMP` – время окончания попытки, необязательно (попытка может быть еще в процессе).
+    *   `score`: `INT CHECK (score >= 0 AND score <= 100)` – результат попытки (баллов от 0 до 100), необязательно, может быть null до завершения попытки, с ограничением, что значение должно быть в диапазоне от 0 до 100.
     *   `FOREIGN KEY ... ON DELETE CASCADE`: Каскадное удаление попыток при удалении пользователя или упражнения.

@@ -14,7 +14,7 @@ ORDER BY
 -- 2. Средний балл за попытки по каждому упражнению
 SELECT
     e.exercise_name,
-    AVG(a.result) AS average_score
+    AVG(a.score) AS average_score
 FROM
     exercises e
 JOIN
@@ -26,8 +26,8 @@ ORDER BY
 
 -- 3. Максимальный и минимальный балл по всем попыткам
 SELECT
-    MAX(result) AS max_score,
-    MIN(result) AS min_score
+    MAX(score) AS max_score,
+    MIN(score) AS min_score
 FROM
     attempts;
 

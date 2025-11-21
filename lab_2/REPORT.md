@@ -60,7 +60,6 @@
 ### 4.1. Схема базы данных (DDL-скрипты)
 
 На основе лабораторной работы №1, приводим DDL-скрипты для создания таблиц:
-- Добавлено ограничение на кол-во баллов
 
 ```sql
 -- Создание таблицы Пользователи
@@ -115,14 +114,19 @@ CREATE TABLE collection_words (
     FOREIGN KEY (word_id) REFERENCES words(id) ON DELETE CASCADE
 );
 
+-- Создание таблицы Типы упражнений
+CREATE TABLE exercise_types (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL
+);
+
 -- Создание таблицы Упражнения
 CREATE TABLE exercises (
     id SERIAL PRIMARY KEY,
-    language_id INT NOT NULL,
+    exercise_type_id INT NOT NULL,
     exercise_name VARCHAR(255) NOT NULL,
-    type VARCHAR(255) NOT NULL,
     difficulty_level VARCHAR(255),
-    FOREIGN KEY (language_id) REFERENCES languages(id) ON DELETE CASCADE
+    FOREIGN KEY (exercise_type_id) REFERENCES exercise_types(id) ON DELETE CASCADE
 );
 
 -- Промежуточная таблица для связи Упражнения <-> Слова (M:N)
@@ -136,18 +140,20 @@ CREATE TABLE exercise_words (
 
 -- Создание таблицы Попытки
 CREATE TABLE attempts (
+    id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
     exercise_id INT NOT NULL,
-    attempt_date_time_start TIMESTAMP NOT NULL,
-    attempt_date_time_end TIMESTAMP,
-    result INT CHECK (result >= 0 AND result <= 100), -- баллов из 100, ограничение: от 0 до 100
-    PRIMARY KEY (user_id, exercise_id, attempt_date_time_start), -- Композитный ключ для уникальности попыток
+    started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP,
+    score INT CHECK (score >= 0 AND score <= 100),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE
 );
 ```
 
 ### 4.2. Наполнение базы данных (DML-скрипты: INSERT INTO)
+
+Примеры вставок данных в таблицы:
 
 ```sql
 INSERT INTO users (nickname, email, hashed_password) VALUES
@@ -194,24 +200,19 @@ INSERT INTO words (language_id, word_text, translation, transcription) VALUES
 ```
 
 ```sql
-INSERT INTO collection_words (collection_id, word_id) VALUES
-(1, 1), -- English Basics: Hello
-(1, 2), -- English Basics: World
-(1, 3), -- English Basics: Apple
-(2, 1), -- Advanced English: Hello
-(2, 2), -- Advanced English: World
-(3, 4), -- Spanish Phrases: Hola
-(3, 5), -- Spanish Phrases: Gracias
-(4, 6), -- French Verbs: Bonjour
-(4, 7); -- French Verbs: Merci
+INSERT INTO exercise_types (name) VALUES
+('Flashcards'),
+('Test'),
+('Quiz'),
+('Typing');
 ```
 
 ```sql
-INSERT INTO exercises (language_id, exercise_name, type, difficulty_level) VALUES
-(1, 'Basic English Words', 'Flashcards', 'Beginner'),
-(1, 'English Grammar Test', 'Test', 'Intermediate'),
-(2, 'Spanish Greetings Practice', 'Flashcards', 'Beginner'),
-(3, 'French Verb Conjugation', 'Quiz', 'Intermediate');
+INSERT INTO exercises (exercise_type_id, exercise_name, difficulty_level) VALUES
+(1, 'Basic English Words', 'Beginner'),
+(2, 'English Grammar Test', 'Intermediate'),
+(1, 'Spanish Greetings Practice', 'Beginner'),
+(3, 'French Verb Conjugation', 'Intermediate');
 ```
 
 ```sql
@@ -228,12 +229,11 @@ INSERT INTO exercise_words (exercise_id, word_id) VALUES
 ```
 
 ```sql
-INSERT INTO attempts (user_id, exercise_id, attempt_date_time_start, attempt_date_time_end, result) VALUES
+INSERT INTO attempts (user_id, exercise_id, started_at, completed_at, score) VALUES
 (1, 1, '2023-10-26 10:00:00', '2023-10-26 10:10:00', 85),
 (1, 1, '2023-10-27 11:00:00', '2023-10-27 11:15:00', 90),
 (2, 1, '2023-10-26 10:05:00', '2023-10-26 10:12:00', 70),
 (3, 4, '2023-10-26 12:00:00', '2023-10-26 12:20:00', 95),
-(4, 5, '2023-10-26 13:00:00', '2023-10-26 13:30:00', 80),
 (1, 2, '2023-10-28 09:00:00', '2023-10-28 09:25:00', 75);
 ```
 
@@ -255,9 +255,9 @@ WHERE id = 1;
 
 -- Обновить результат попытки для пользователя 1, упражнения 1, начатой в 2023-10-26 10:00:00
 UPDATE attempts
-SET result = 92,
-    attempt_date_time_end = '2023-10-26 10:11:00'
-WHERE user_id = 1 AND exercise_id = 1 AND attempt_date_time_start = '2023-10-26 10:00:00';
+SET score = 92,
+    completed_at = '2023-10-26 10:11:00'
+WHERE user_id = 1 AND exercise_id = 1 AND started_at = '2023-10-26 10:00:00';
 
 -- Изменить уровень сложности упражнения 'Basic English Words' на 'Intermediate'
 UPDATE exercises
@@ -304,7 +304,7 @@ ORDER BY
 -- 2. Средний балл за попытки по каждому упражнению
 SELECT
     e.exercise_name,
-    AVG(a.result) AS average_score
+    AVG(a.score) AS average_score
 FROM
     exercises e
 JOIN
@@ -316,8 +316,8 @@ ORDER BY
 
 -- 3. Максимальный и минимальный балл по всем попыткам
 SELECT
-    MAX(result) AS max_score,
-    MIN(result) AS min_score
+    MAX(score) AS max_score,
+    MIN(score) AS min_score
 FROM
     attempts;
 
@@ -382,21 +382,25 @@ LEFT JOIN
 ORDER BY
     c.name, w.word_text;
 
--- 3. Получить упражнения и слова, которые в них используются, для определенного языка (например, English)
+-- 3. Получить упражнения, их типы и слова, которые в них используются, для определенного языка (например, English)
 SELECT
     e.exercise_name,
-    e.type,
+    et.name AS exercise_type,
     e.difficulty_level,
     w.word_text,
     w.translation
 FROM
     exercises e
 JOIN
+    exercise_types et ON e.exercise_type_id = et.id
+JOIN
     exercise_words ew ON e.id = ew.exercise_id
 JOIN
     words w ON ew.word_id = w.id
 JOIN
-    languages l ON e.language_id = l.id
+    collections c ON w.language_id = c.language_id -- предполагаем, что язык упражнения соответствует языку слова в коллекции
+JOIN
+    languages l ON c.language_id = l.id
 WHERE
     l.name = 'English';
 
@@ -404,9 +408,9 @@ WHERE
 SELECT
     u.nickname,
     e.exercise_name,
-    a.attempt_date_time_start,
-    a.attempt_date_time_end,
-    a.result
+    a.started_at,
+    a.completed_at,
+    a.score
 FROM
     attempts a
 JOIN
@@ -414,7 +418,7 @@ JOIN
 JOIN
     exercises e ON a.exercise_id = e.id
 ORDER BY
-    u.nickname, a.attempt_date_time_start;
+    u.nickname, a.started_at;
 ```
 
 ### 4.6. Создание представлений
@@ -427,8 +431,8 @@ SELECT
     u.nickname,
     l.name AS language_name,
     COUNT(DISTINCT a.exercise_id) AS completed_exercises,
-    AVG(a.result) AS average_score,
-    MAX(a.attempt_date_time_end) AS last_attempt_date
+    AVG(a.score) AS average_score,
+    MAX(a.completed_at) AS last_attempt_date
 FROM
     users u
 JOIN
@@ -436,7 +440,13 @@ JOIN
 JOIN
     languages l ON ul.language_id = l.id
 LEFT JOIN
-    exercises e ON l.id = e.language_id
+    collections c ON l.id = c.language_id
+LEFT JOIN
+    words w ON c.language_id = w.language_id
+LEFT JOIN
+    exercise_words ew ON w.id = ew.word_id
+LEFT JOIN
+    exercises e ON ew.exercise_id = e.id
 LEFT JOIN
     attempts a ON u.id = a.user_id AND e.id = a.exercise_id
 GROUP BY
@@ -471,9 +481,9 @@ SELECT
     u.id AS user_id,
     u.nickname,
     u.email,
-    AVG(a.result) AS overall_average_score,
+    AVG(a.score) AS overall_average_score,
     COUNT(a.user_id) AS total_attempts,
-    MAX(a.attempt_date_time_end) AS last_activity
+    MAX(a.completed_at) AS last_activity
 FROM
     users u
 JOIN
