@@ -9,7 +9,7 @@ DROP TABLE IF EXISTS words CASCADE;
 DROP TABLE IF EXISTS exercise_types CASCADE;
 DROP TABLE IF EXISTS languages CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
-DROP TABLE IF EXISTS user_log CASCADE; -- Добавлена новая таблица для удаления
+DROP TABLE IF EXISTS user_log CASCADE; -- новая таблица для удаления
 
 -- Создание таблицы Пользователи
 CREATE TABLE users (
@@ -103,16 +103,17 @@ CREATE TABLE attempts (
 CREATE TABLE user_log (
     log_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
-    nickname VARCHAR(255) NOT NULL,
+    nickname VARCHAR(255) NOT NULL, -- компромисс между нормализацией и сохранением исторической информации аудита
     action_type VARCHAR(50) NOT NULL,
-    action_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    action_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE NO ACTION
 );
 
 -- Хранимые функции
 CREATE OR REPLACE FUNCTION calculate_user_average_score(p_user_id INT)
 RETURNS NUMERIC AS $$
 DECLARE
-    avg_score NUMERIC;
+    avg_score NUMERIC(5, 2); -- локальная переменная
 BEGIN
     SELECT AVG(score) INTO avg_score
     FROM attempts
@@ -125,7 +126,7 @@ BEGIN
     RETURN avg_score;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        RETURN 0; -- На случай, если пользователь вообще не существует (хотя внешний ключ должен предотвратить это)
+        RETURN 0; 
     WHEN OTHERS THEN
         RAISE EXCEPTION 'Произошла непредвиденная ошибка при расчете среднего балла для пользователя ID: %', p_user_id;
 END;
@@ -239,7 +240,7 @@ RETURNS TRIGGER AS $$
 BEGIN
     INSERT INTO user_log (user_id, nickname, action_type)
     VALUES (NEW.id, NEW.nickname, 'REGISTRATION');
-    RETURN NEW;
+    RETURN NEW; -- после регистрации пользователя NEW должна быть передана дальше для завершения операции INSERT в users
 END;
 $$ LANGUAGE plpgsql;
 
@@ -247,6 +248,34 @@ CREATE OR REPLACE TRIGGER log_new_user_registration
 AFTER INSERT ON users
 FOR EACH ROW
 EXECUTE FUNCTION log_new_user_registration_func();
+
+CREATE OR REPLACE FUNCTION log_user_updates_func()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO user_log (user_id, nickname, action_type)
+    VALUES (NEW.id, NEW.nickname, 'UPDATE');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER log_user_updates
+AFTER UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION log_user_updates_func();
+
+CREATE OR REPLACE FUNCTION log_user_deletions_func()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO user_log (user_id, nickname, action_type)
+    VALUES (OLD.id, OLD.nickname, 'DELETE');
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER log_user_deletions
+AFTER DELETE ON users
+FOR EACH ROW
+EXECUTE FUNCTION log_user_deletions_func();
 
 CREATE OR REPLACE FUNCTION prevent_duplicate_word_in_collection_func()
 RETURNS TRIGGER AS $$
@@ -357,6 +386,14 @@ SELECT id, score, completed_at FROM attempts WHERE id = 1;
 
 -- Демонстрация триггеров
 INSERT INTO users (nickname, email, hashed_password) VALUES ('trigger_user', 'trigger@example.com', 'trigger_hash');
+SELECT * FROM user_log;
+
+-- Демонстрация триггера log_user_updates
+UPDATE users SET nickname = 'updated_user' WHERE nickname = 'trigger_user';
+SELECT * FROM user_log;
+
+-- Демонстрация триггера log_user_deletions
+DELETE FROM users WHERE nickname = 'updated_user';
 SELECT * FROM user_log;
 
 -- Следующие INSERT закомментированы, так как они вызывают ошибки для демонстрации

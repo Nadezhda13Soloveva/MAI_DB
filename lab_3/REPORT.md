@@ -39,20 +39,20 @@ PostgreSQL позволяет **обрабатывать ошибки** внут
 CREATE OR REPLACE FUNCTION calculate_user_average_score(p_user_id INT)
 RETURNS NUMERIC AS $$
 DECLARE
-    avg_score NUMERIC;
+    avg_score NUMERIC(5, 2); -- локальная переменная
 BEGIN
     SELECT AVG(score) INTO avg_score
     FROM attempts
     WHERE user_id = p_user_id;
 
     IF avg_score IS NULL THEN
-        RETURN 0; -- Возвращаем 0, если у пользователя нет попыток
+        RETURN 0; -- возвращаем 0, если у пользователя нет попыток
     END IF;
 
     RETURN avg_score;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        RETURN 0; -- На случай, если пользователь вообще не существует (хотя внешний ключ должен предотвратить это)
+        RETURN 0;
     WHEN OTHERS THEN
         RAISE EXCEPTION 'Произошла непредвиденная ошибка при расчете среднего балла для пользователя ID: %', p_user_id;
 END;
@@ -68,7 +68,7 @@ SELECT calculate_user_average_score(999); -- Пользователь не су�
 
 #### 4.1.2. Функция `get_collection_word_count`
 
-Эта функция возвращает количество слов в конкретной коллекции. Если коллекция не найдена, функция вернет 0 и обработает исключение.
+Эта функция возвращает кол-во слов в конкретной коллекции. Если коллекция не найдена, функция вернет 0 и обработает исключение.
 
 ```sql
 CREATE OR REPLACE FUNCTION get_collection_word_count(p_collection_id INT)
@@ -81,13 +81,13 @@ BEGIN
     WHERE collection_id = p_collection_id;
 
     IF word_count IS NULL THEN
-        RETURN 0; -- Возвращаем 0, если коллекция не существует или в ней нет слов
+        RETURN 0; -- возвращаем 0, если коллекция не существует или в ней нет слов
     END IF;
 
     RETURN word_count;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        RETURN 0; -- На случай, если коллекция вообще не существует (хотя внешний ключ должен предотвратить это)
+        RETURN 0;
     WHEN OTHERS THEN
         RAISE EXCEPTION 'Произошла непредвиденная ошибка при подсчете слов в коллекции ID: %', p_collection_id;
 END;
@@ -119,36 +119,36 @@ LANGUAGE plpgsql AS $$
 DECLARE
     v_word_id INT;
 BEGIN
-    -- Проверяем существование коллекции
+    -- проверяем существование коллекции
     IF NOT EXISTS (SELECT 1 FROM collections WHERE id = p_collection_id) THEN
         RAISE EXCEPTION 'Коллекция с ID % не найдена.', p_collection_id;
     END IF;
 
-    -- Проверяем, существует ли уже такое слово для данного языка
+    -- проверяем, существует ли уже такое слово для данного языка
     SELECT id INTO v_word_id
     FROM words
     WHERE language_id = p_language_id AND word_text = p_word_text;
 
     IF v_word_id IS NULL THEN
-        -- Если слово не существует, добавляем его
+        -- если слово не существует -> добавляем его
         INSERT INTO words (language_id, word_text, translation, transcription)
         VALUES (p_language_id, p_word_text, p_translation, p_transcription)
         RETURNING id INTO v_word_id;
     END IF;
 
-    -- Проверяем, не привязано ли уже это слово к данной коллекции
+    -- проверяем, не привязано ли уже это слово к данной коллекции
     IF EXISTS (SELECT 1 FROM collection_words WHERE collection_id = p_collection_id AND word_id = v_word_id) THEN
         RAISE EXCEPTION 'Слово \'%\' (ID: %) уже существует в коллекции ID: %.', p_word_text, v_word_id, p_collection_id;
     END IF;
 
-    -- Привязываем слово к коллекции
+    --привязываем слово к коллекции
     INSERT INTO collection_words (collection_id, word_id)
     VALUES (p_collection_id, v_word_id);
 
     COMMIT;
 EXCEPTION
-    WHEN OTHERS THEN
-        ROLLBACK;
+    WHEN OTHERS THEN -- перехватывает любые другие неопределенные исключения
+        ROLLBACK; -- откат всех изменений в текущей транзакции
         RAISE EXCEPTION 'Ошибка при добавлении слова \'%\' в коллекцию ID: %: %'
             , p_word_text, p_collection_id, SQLERRM;
 END;
@@ -174,17 +174,17 @@ CREATE OR REPLACE PROCEDURE update_attempt_score(
 )
 LANGUAGE plpgsql AS $$
 BEGIN
-    -- Проверяем существование попытки
+    -- проверяем существование попытки
     IF NOT EXISTS (SELECT 1 FROM attempts WHERE id = p_attempt_id) THEN
         RAISE EXCEPTION 'Попытка с ID % не найдена.', p_attempt_id;
     END IF;
 
-    -- Проверяем валидность балла
+    -- проверяем валидность балла
     IF p_score < 0 OR p_score > 100 THEN
         RAISE EXCEPTION 'Балл % должен быть в диапазоне от 0 до 100.', p_score;
     END IF;
 
-    -- Обновляем балл и время завершения попытки
+    -- обновляем балл и время завершения попытки
     UPDATE attempts
     SET
         score = p_score,
@@ -205,7 +205,7 @@ $$;
 **Пример использования:**
 
 ```sql
-CALL update_attempt_score(1, 95); -- Обновить балл для существующей попытки
+CALL update_attempt_score(1, 95); -- Корректное обновление для существующей попытки
 CALL update_attempt_score(999, 80); -- Ошибка: попытка не найдена
 CALL update_attempt_score(1, 101); -- Ошибка: невалидный балл
 ```
@@ -218,9 +218,10 @@ CALL update_attempt_score(1, 101); -- Ошибка: невалидный бал�
 CREATE TABLE user_log (
     log_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
-    nickname VARCHAR(255) NOT NULL,
+    nickname VARCHAR(255) NOT NULL, -- компромисс между нормализацией и сохранением исторической информации аудита
     action_type VARCHAR(50) NOT NULL,
-    action_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    action_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE NO ACTION -- сохраняем логи даже при удалении пользователя
 );
 ```
 
@@ -234,7 +235,7 @@ RETURNS TRIGGER AS $$
 BEGIN
     INSERT INTO user_log (user_id, nickname, action_type)
     VALUES (NEW.id, NEW.nickname, 'REGISTRATION');
-    RETURN NEW;
+    RETURN NEW; -- после регистрации пользователя NEW должна быть передана дальше для завершения операции INSERT в users
 END;
 $$ LANGUAGE plpgsql;
 
@@ -244,14 +245,47 @@ FOR EACH ROW
 EXECUTE FUNCTION log_new_user_registration_func();
 ```
 
-**Пример использования (DML):**
+#### 4.3.2. Триггер `log_user_updates`
+
+Этот триггер срабатывает `AFTER UPDATE` на таблице `users` и записывает информацию об изменениях пользователя в таблицу `user_log`.
 
 ```sql
-INSERT INTO users (nickname, email, hashed_password) VALUES ('test_user', 'test@example.com', 'test_hash');
-SELECT * FROM user_log;
+CREATE OR REPLACE FUNCTION log_user_updates_func()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO user_log (user_id, nickname, action_type)
+    VALUES (NEW.id, NEW.nickname, 'UPDATE');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER log_user_updates
+AFTER UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION log_user_updates_func();
 ```
 
-#### 4.3.2. Триггер `prevent_duplicate_word_in_collection`
+#### 4.3.3. Триггер `log_user_deletions`
+
+Этот триггер срабатывает `AFTER DELETE` на таблице `users` и записывает информацию об удалении пользователя в таблицу `user_log`.
+
+```sql
+CREATE OR REPLACE FUNCTION log_user_deletions_func()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO user_log (user_id, nickname, action_type)
+    VALUES (OLD.id, OLD.nickname, 'DELETE');
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER log_user_deletions
+AFTER DELETE ON users
+FOR EACH ROW
+EXECUTE FUNCTION log_user_deletions_func();
+```
+
+#### 4.3.4. Триггер `prevent_duplicate_word_in_collection`
 
 Этот триггер срабатывает `BEFORE INSERT` на таблице `collection_words` и проверяет, не привязано ли уже добавляемое слово к данной коллекции. Если слово уже существует, триггер отменит операцию вставки и выдаст пользовательскую ошибку.
 
