@@ -145,10 +145,8 @@ BEGIN
     INSERT INTO collection_words (collection_id, word_id)
     VALUES (p_collection_id, v_word_id);
 
-    COMMIT;
 EXCEPTION
     WHEN OTHERS THEN -- перехватывает любые другие неопределенные исключения
-        ROLLBACK; -- откат всех изменений в текущей транзакции
         RAISE EXCEPTION 'Ошибка при добавлении слова \'%\' в коллекцию ID: %: %'
             , p_word_text, p_collection_id, SQLERRM;
 END;
@@ -192,10 +190,8 @@ BEGIN
     WHERE
         id = p_attempt_id;
 
-    COMMIT;
 EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
         RAISE EXCEPTION 'Ошибка при обновлении балла для попытки ID %: %'
             , p_attempt_id, SQLERRM;
 END;
@@ -217,11 +213,11 @@ CALL update_attempt_score(1, 101); -- Ошибка: невалидный бал�
 ```sql
 CREATE TABLE user_log (
     log_id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL,
+    user_id INT,
     nickname VARCHAR(255) NOT NULL, -- компромисс между нормализацией и сохранением исторической информации аудита
     action_type VARCHAR(50) NOT NULL,
     action_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE NO ACTION -- сохраняем логи даже при удалении пользователя
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL -- user_id обнуляется при удалении пользователя, логи сохраняются
 );
 ```
 

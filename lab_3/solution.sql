@@ -1,112 +1,14 @@
--- Удаление таблиц, если они существуют (для чистого перезапуска)
-DROP TABLE IF EXISTS attempts CASCADE;
-DROP TABLE IF EXISTS exercise_words CASCADE;
-DROP TABLE IF EXISTS collection_words CASCADE;
-DROP TABLE IF EXISTS user_languages CASCADE;
-DROP TABLE IF EXISTS exercises CASCADE;
-DROP TABLE IF EXISTS collections CASCADE;
-DROP TABLE IF EXISTS words CASCADE;
-DROP TABLE IF EXISTS exercise_types CASCADE;
-DROP TABLE IF EXISTS languages CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS user_log CASCADE; -- новая таблица для удаления
 
--- Создание таблицы Пользователи
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    nickname VARCHAR(255) UNIQUE NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    hashed_password VARCHAR(255) NOT NULL
-);
-
--- Создание таблицы Языки
-CREATE TABLE languages (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) UNIQUE NOT NULL
-);
-
--- Промежуточная таблица для связи Пользователь <-> Языки (M:N)
-CREATE TABLE user_languages (
-    user_id INT NOT NULL,
-    language_id INT NOT NULL,
-    PRIMARY KEY (user_id, language_id),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (language_id) REFERENCES languages(id) ON DELETE CASCADE
-);
-
--- Создание таблицы Коллекции
-CREATE TABLE collections (
-    id SERIAL PRIMARY KEY,
-    language_id INT NOT NULL,
-    creator_id INT NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    FOREIGN KEY (language_id) REFERENCES languages(id) ON DELETE CASCADE,
-    FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
--- Создание таблицы Слова
-CREATE TABLE words (
-    id SERIAL PRIMARY KEY,
-    language_id INT NOT NULL,
-    word_text VARCHAR(255) NOT NULL,
-    translation VARCHAR(255) NOT NULL,
-    transcription VARCHAR(255),
-    FOREIGN KEY (language_id) REFERENCES languages(id) ON DELETE CASCADE
-);
-
--- Промежуточная таблица для связи Коллекции <-> Слова (M:N)
-CREATE TABLE collection_words (
-    collection_id INT NOT NULL,
-    word_id INT NOT NULL,
-    PRIMARY KEY (collection_id, word_id),
-    FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE,
-    FOREIGN KEY (word_id) REFERENCES words(id) ON DELETE CASCADE
-);
-
--- Создание таблицы Типы упражнений
-CREATE TABLE exercise_types (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) UNIQUE NOT NULL
-);
-
--- Создание таблицы Упражнения
-CREATE TABLE exercises (
-    id SERIAL PRIMARY KEY,
-    exercise_type_id INT NOT NULL,
-    exercise_name VARCHAR(255) NOT NULL,
-    difficulty_level VARCHAR(255),
-    FOREIGN KEY (exercise_type_id) REFERENCES exercise_types(id) ON DELETE CASCADE
-);
-
--- Промежуточная таблица для связи Упражнения <-> Слова (M:N)
-CREATE TABLE exercise_words (
-    exercise_id INT NOT NULL,
-    word_id INT NOT NULL,
-    PRIMARY KEY (exercise_id, word_id),
-    FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
-    FOREIGN KEY (word_id) REFERENCES words(id) ON DELETE CASCADE
-);
-
--- Создание таблицы Попытки
-CREATE TABLE attempts (
-    id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL,
-    exercise_id INT NOT NULL,
-    started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    completed_at TIMESTAMP,
-    score INT CHECK (score >= 0 AND score <= 100),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE
-);
 
 -- Создание вспомогательной таблицы для аудита пользователей.
 CREATE TABLE user_log (
     log_id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL,
+    user_id INT,
     nickname VARCHAR(255) NOT NULL, -- компромисс между нормализацией и сохранением исторической информации аудита
     action_type VARCHAR(50) NOT NULL,
     action_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE NO ACTION
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- Хранимые функции
@@ -166,37 +68,35 @@ LANGUAGE plpgsql AS $$
 DECLARE
     v_word_id INT;
 BEGIN
-    -- Проверяем существование коллекции
+    -- проверяем существование коллекции
     IF NOT EXISTS (SELECT 1 FROM collections WHERE id = p_collection_id) THEN
         RAISE EXCEPTION 'Коллекция с ID % не найдена.', p_collection_id;
     END IF;
 
-    -- Проверяем, существует ли уже такое слово для данного языка
+    -- проверяем, существует ли уже такое слово для данного языка
     SELECT id INTO v_word_id
     FROM words
     WHERE language_id = p_language_id AND word_text = p_word_text;
 
     IF v_word_id IS NULL THEN
-        -- Если слово не существует, добавляем его
+        -- если слово не существует -> добавляем его
         INSERT INTO words (language_id, word_text, translation, transcription)
         VALUES (p_language_id, p_word_text, p_translation, p_transcription)
         RETURNING id INTO v_word_id;
     END IF;
 
-    -- Проверяем, не привязано ли уже это слово к данной коллекции
+    -- проверяем, не привязано ли уже это слово к данной коллекции
     IF EXISTS (SELECT 1 FROM collection_words WHERE collection_id = p_collection_id AND word_id = v_word_id) THEN
-        RAISE EXCEPTION 'Слово \'%\' (ID: %) уже существует в коллекции ID: %.', p_word_text, v_word_id, p_collection_id;
+        RAISE EXCEPTION 'Слово "%" (ID: %) уже существует в коллекции ID: %.', p_word_text, v_word_id, p_collection_id;
     END IF;
 
-    -- Привязываем слово к коллекции
+    -- привязываем слово к коллекции
     INSERT INTO collection_words (collection_id, word_id)
     VALUES (p_collection_id, v_word_id);
 
-    COMMIT;
 EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
-        RAISE EXCEPTION 'Ошибка при добавлении слова \'%\' в коллекцию ID: %: %'
+        RAISE EXCEPTION 'Ошибка при добавлении слова "%" в коллекцию ID: %: %'
             , p_word_text, p_collection_id, SQLERRM;
 END;
 $$;
@@ -225,10 +125,8 @@ BEGIN
     WHERE
         id = p_attempt_id;
 
-    COMMIT;
 EXCEPTION
     WHEN OTHERS THEN
-        ROLLBACK;
         RAISE EXCEPTION 'Ошибка при обновлении балла для попытки ID %: %'
             , p_attempt_id, SQLERRM;
 END;
@@ -294,7 +192,7 @@ FOR EACH ROW
 EXECUTE FUNCTION prevent_duplicate_word_in_collection_func();
 
 
--- DML-операции для демонстрации (убедитесь, что данные существуют для их выполнения)
+-- DML-операции для демонстрации
 
 -- Начальные данные для демонстрации
 INSERT INTO users (nickname, email, hashed_password) VALUES
