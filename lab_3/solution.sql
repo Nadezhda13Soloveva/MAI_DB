@@ -7,8 +7,7 @@ CREATE TABLE user_log (
     user_id INT,
     nickname VARCHAR(255) NOT NULL, -- компромисс между нормализацией и сохранением исторической информации аудита
     action_type VARCHAR(50) NOT NULL,
-    action_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    action_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Хранимые функции
@@ -171,7 +170,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE TRIGGER log_user_deletions
-AFTER DELETE ON users
+BEFORE DELETE ON users
 FOR EACH ROW
 EXECUTE FUNCTION log_user_deletions_func();
 
