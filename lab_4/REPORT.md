@@ -90,43 +90,43 @@
 
 | Таблица | Название индекса | Поле(я) | Причина |
 | :--------------- | :---------------------------------- | :-------------------------------- | :---------------------------------------------------------------------------- |
-| `user_languages` | `idx_user_languages_user_id` | `user_id` | Ускорение поиска и соединений по `user_id`. |
-| `user_languages` | `idx_user_languages_language_id` | `language_id` | Ускорение поиска и соединений по `language_id`. |
-| `collections` | `idx_collections_language_id` | `language_id` | Ускорение поиска и соединений по `language_id`. |
-| `collections` | `idx_collections_creator_id` | `creator_id` | Ускорение поиска и соединений по `creator_id`. |
-| `collections` | `idx_collections_name` | `name` | Ускорение поиска и сортировки по названию коллекции. |
-| `words` | `idx_words_language_id` | `language_id` | Ускорение поиска и фильтрации по `language_id`. |
-| `words` | `idx_words_word_text` | `word_text` | Ускорение поиска и сортировки по тексту слова. |
-| `words` | `idx_words_translation` | `translation` | Ускорение поиска и сортировки по переводу слова. |
-| `collection_words` | `idx_collection_words_collection_id` | `collection_id` | Ускорение поиска и соединений по `collection_id`. |
-| `collection_words` | `idx_collection_words_word_id` | `word_id` | Ускорение поиска и соединений по `word_id`. |
-| `exercises` | `idx_exercises_exercise_type_id` | `exercise_type_id` | Ускорение поиска и фильтрации по `exercise_type_id`. |
-| `exercises` | `idx_exercises_exercise_name` | `exercise_name` | Ускорение поиска и сортировки по названию упражнения. |
-| `exercises` | `idx_exercises_difficulty_level` | `difficulty_level` | Ускорение поиска и фильтрации по уровню сложности. |
-| `exercise_words` | `idx_exercise_words_exercise_id` | `exercise_id` | Ускорение поиска и соединений по `exercise_id`. |
-| `exercise_words` | `idx_exercise_words_word_id` | `word_id` | Ускорение поиска и соединений по `word_id`. |
-| `attempts` | `idx_attempts_user_id` | `user_id` | Ускорение поиска и фильтрации по `user_id`. |
-| `attempts` | `idx_attempts_exercise_id` | `exercise_id` | Ускорение поиска и фильтрации по `exercise_id`. |
-| `attempts` | `idx_attempts_started_at` | `started_at` | Ускорение поиска по диапазону дат и сортировки. |
-| `attempts` | `idx_attempts_completed_at` | `completed_at` | Ускорение поиска по диапазону дат и сортировки. |
-| `attempts` | `idx_attempts_score` | `score` | Ускорение поиска и фильтрации по баллам. |
-| `attempts` | `idx_attempts_user_exercise_score` | `user_id, exercise_id, score DESC` | Ускорение поиска, фильтрации и сортировки для комплексных запросов. |
-| `collections` | `idx_collections_language_creator` | `language_id, creator_id` | Ускорение поиска и фильтрации по языку и создателю коллекции. |
+| `user_languages` | `idx_user_languages_user_id` | `user_id` | Ускорение поиска и соединений по `user_id`|
+| `user_languages` | `idx_user_languages_language_id` | `language_id` | Ускорение поиска и соединений по `language_id`|
+| `collections` | `idx_collections_language_id` | `language_id` | Ускорение поиска и соединений по `language_id`|
+| `collections` | `idx_collections_creator_id` | `creator_id` | Ускорение поиска и соединений по `creator_id`|
+| `collections` | `idx_collections_name` | `name` | Ускорение поиска и сортировки по названию коллекции|
+| `words` | `idx_words_language_id` | `language_id` | Ускорение поиска и фильтрации по `language_idё |
+| `words` | `idx_words_word_text` | `word_text` | Ускорение поиска и сортировки по тексту слова|
+| `words` | `idx_words_translation` | `translation` | Ускорение поиска и сортировки по переводу слова |
+| `collection_words` | `idx_collection_words_collection_id` | `collection_id` | Ускорение поиска и соединений по `collection_id` |
+| `collection_words` | `idx_collection_words_word_id` | `word_id` | Ускорение поиска и соединений по `word_id` |
+| `exercises` | `idx_exercises_exercise_type_id` | `exercise_type_id` | Ускорение поиска и фильтрации по `exercise_type_id`|
+| `exercises` | `idx_exercises_exercise_name` | `exercise_name` | Ускорение поиска и сортировки по названию упражнения |
+| `exercises` | `idx_exercises_difficulty_level` | `difficulty_level` | Ускорение поиска и фильтрации по уровню сложности |
+| `exercise_words` | `idx_exercise_words_exercise_id` | `exercise_id` | Ускорение поиска и соединений по `exercise_id` |
+| `exercise_words` | `idx_exercise_words_word_id` | `word_id` | Ускорение поиска и соединений по `word_id`|
+| `attempts` | `idx_attempts_user_id` | `user_id` | Ускорение поиска и фильтрации по `user_id` |
+| `attempts` | `idx_attempts_exercise_id` | `exercise_id` | Ускорение поиска и фильтрации по `exercise_id` |
+| `attempts` | `idx_attempts_started_at` | `started_at` | Ускорение поиска по диапазону дат и сортировки|
+| `attempts` | `idx_attempts_completed_at` | `completed_at` | Ускорение поиска по диапазону дат и сортировки |
+| `attempts` | `idx_attempts_score` | `score` | Ускорение поиска и фильтрации по баллам|
+| `attempts` | `idx_attempts_user_exercise_score` | `user_id, exercise_id, score DESC` | Ускорение поиска, фильтрации и сортировки для комплексных запросов |
+| `collections` | `idx_collections_language_creator` | `language_id, creator_id` | Ускорение поиска и фильтрации по языку и создателю коллекции|
 
 #### Анализ простых запросов с индексами
 
 | Запрос | Наличие индекса | Тип сканирования | Execution Time | Коммент |
 | :------------------------------------------------------------ | :-------------- | :-------------------------------- | :--------- | :---------- |
-| `SELECT * FROM users WHERE nickname = 'user_100';` | НЕТ | Seq Scan | 0.359 ms | Тут индекс не был создан, поэтому БД прошлась по всей таблице, чтобы найти нужного пользователя. |
-| `SELECT * FROM users WHERE nickname = 'user_100';` | ДА | Seq Scan | 0.074 ms | Даже с индексом по никнейму, БД всё равно решила пройтись по всей таблице. Вероятно, потому что таблица с пользователями оказалась небольшой (всего 200 записей), и прямой перебор оказался быстрее, чем использование индекса. |
-| `SELECT * FROM words WHERE language_id = 5;` | НЕТ | Seq Scan | 0.231 ms | Без индекса на `language_id` пришлось сканировать всю таблицу слов. |
-| `SELECT * FROM words WHERE language_id = 5;` | ДА | Bitmap Index Scan | 0.195 ms | Здесь индекс `idx_words_language_id` помог: БД сначала быстро нашла нужные записи по индексу, а потом получила данные из таблицы. Время немного сократилось. |
-| `SELECT * FROM collections WHERE creator_id = 50;` | НЕТ | Seq Scan | 0.109 ms | Опять же, без индекса на `creator_id` пришлось делать полное сканирование коллекции. |
-| `SELECT * FROM collections WHERE creator_id = 50;` | ДА | Seq Scan | 0.080 ms | Как и с пользователями, таблица коллекций (300 записей) оказалась слишком маленькой, чтобы индекс на `creator_id` существенно повлиял. Оптимизатор выбрал полное сканирование. |
-| `SELECT * FROM attempts WHERE user_id = 75 ORDER BY started_at DESC;` | НЕТ | Seq Scan | 0.322 ms | Без индекса, чтобы отсортировать попытки пользователя, БД сначала просканировала всё, а потом отсортировала в памяти. |
-| `SELECT * FROM attempts WHERE user_id = 75 ORDER BY started_at DESC;` | ДА | Bitmap Index Scan | 0.130 ms | Вот тут индекс `idx_attempts_user_id` помог: запрос выполнился быстрее, так как данные по пользователю были найдены по индексу, и сортировка по дате тоже использовала индекс. |
-| `SELECT * FROM exercises WHERE difficulty_level = 'Intermediate';` | НЕТ | Seq Scan | 0.112 ms | Полное сканирование упражнений, так как по уровню сложности индекса нет. |
-| `SELECT * FROM exercises WHERE difficulty_level = 'Intermediate';` | ДА | Seq Scan | 0.097 ms | Таблица с упражнениями тоже невелика (200 записей), поэтому индекс на `difficulty_level` не сильно изменил план выполнения — оптимизатор всё равно выбрал полное сканирование. |
+| `SELECT * FROM users WHERE nickname = 'user_100';` | НЕТ | Seq Scan | 0.359 ms | Тут индекс не был создан, поэтому БД прошлась по всей таблице, чтобы найти нужного пользователя |
+| `SELECT * FROM users WHERE nickname = 'user_100';` | ДА | Seq Scan | 0.074 ms | Даже с индексом по никнейму, БД всё равно решила пройтись по всей таблице. Вероятно, потому что таблица с пользователями оказалась небольшой (всего 200 записей), и прямой перебор оказался быстрее, чем использование индекса|
+| `SELECT * FROM words WHERE language_id = 5;` | НЕТ | Seq Scan | 0.231 ms | Без индекса на `language_id` пришлось сканировать всю таблицу слов|
+| `SELECT * FROM words WHERE language_id = 5;` | ДА | Bitmap Index Scan | 0.195 ms | Здесь индекс `idx_words_language_id` помог: БД сначала быстро нашла нужные записи по индексу, а потом получила данные из таблицы. Время немного сократилось|
+| `SELECT * FROM collections WHERE creator_id = 50;` | НЕТ | Seq Scan | 0.109 ms | Опять же, без индекса на `creator_id` пришлось делать полное сканирование коллекции|
+| `SELECT * FROM collections WHERE creator_id = 50;` | ДА | Seq Scan | 0.080 ms | Как и с пользователями, таблица коллекций (300 записей) оказалась слишком маленькой, чтобы индекс на `creator_id` существенно повлиял. Оптимизатор выбрал полное сканирование |
+| `SELECT * FROM attempts WHERE user_id = 75 ORDER BY started_at DESC;` | НЕТ | Seq Scan | 0.322 ms | Без индекса, чтобы отсортировать попытки пользователя, БД сначала просканировала всё, а потом отсортировала в памяти|
+| `SELECT * FROM attempts WHERE user_id = 75 ORDER BY started_at DESC;` | ДА | Bitmap Index Scan | 0.130 ms | Вот тут индекс `idx_attempts_user_id` помог: запрос выполнился быстрее, так как данные по пользователю были найдены по индексу, и сортировка по дате тоже использовала индекс|
+| `SELECT * FROM exercises WHERE difficulty_level = 'Intermediate';` | НЕТ | Seq Scan | 0.112 ms | Полное сканирование упражнений, так как по уровню сложности индекса нет|
+| `SELECT * FROM exercises WHERE difficulty_level = 'Intermediate';` | ДА | Seq Scan | 0.097 ms | Таблица с упражнениями тоже невелика (200 записей), поэтому индекс на `difficulty_level` не сильно изменил план выполнения — оптимизатор всё равно выбрал полное сканирование|
 
 
 ### 4.2. Анализ производительности с EXPLAIN
@@ -196,9 +196,9 @@ ORDER BY
 Транзакция T1 (уровень изоляции READ COMMITTED - по умолчанию):
 ```sql
 BEGIN;
-SELECT nickname FROM users WHERE id = 1; -- Получает 'user1'
--- (Пауза, пока T2 делает изменения)
-SELECT nickname FROM users WHERE id = 1; -- Снова получает 'user1', т.к. T2 еще не закоммитилась (Dirty Read предотвращен)
+SELECT nickname FROM users WHERE id = 1; -- получим 'user1'
+-- (пауза пока T2 делает изменения)
+SELECT nickname FROM users WHERE id = 1; -- снова получаем 'user1', т.к. T2 еще не закоммитилась (Dirty Read предотвращен)
 COMMIT;
 ```
 
@@ -206,8 +206,8 @@ COMMIT;
 ```sql
 BEGIN;
 UPDATE users SET nickname = 'DirtyUser' WHERE id = 1;
--- (Пауза, чтобы T1 успела прочитать до коммита)
-ROLLBACK; -- Откат изменений
+-- (пауза, чтобы T1 успела прочитать до коммита)
+ROLLBACK;
 ```
 
 Описание: В PostgreSQL на уровне READ COMMITTED транзакция T1 не сможет прочитать изменения, сделанные T2, пока T2 не закоммитит свои изменения. Таким образом, Dirty Read предотвращается.
@@ -238,9 +238,9 @@ COMMIT;
 Транзакция T1 (уровень изоляции REPEATABLE READ):
 ```sql
 BEGIN ISOLATION LEVEL REPEATABLE READ;
-SELECT nickname FROM users WHERE id = 1; -- Получает 'user1'
--- (Пауза, пока T2 делает и коммитит изменения)
-SELECT nickname FROM users WHERE id = 1; -- Снова получает 'user1', потому что REPEATABLE READ не дает видеть изменения других транзакций после первого чтения.
+SELECT nickname FROM users WHERE id = 1; -- получаем 'user1'
+-- (пауза  пока T2 делает и коммитит изменения)
+SELECT nickname FROM users WHERE id = 1; -- снова получили 'user1', потому что REPEATABLE READ не дает видеть изменения других транзакций после первого чтения
 COMMIT;
 ```
 #### 4.3.3. Phantom Read (Фантомное чтение)
@@ -250,9 +250,9 @@ COMMIT;
 Транзакция T1 (уровень изоляции REPEATABLE READ):
 ```sql
 BEGIN ISOLATION LEVEL REPEATABLE READ;
-SELECT COUNT(*) FROM words WHERE language_id = 11; -- Получает 0
--- (Пауза, пока T2 добавляет новую строку)
-SELECT COUNT(*) FROM words WHERE language_id = 11; -- Все еще получает 0, т.к. REPEATABLE READ не позволяет видеть новые строки.
+SELECT COUNT(*) FROM words WHERE language_id = 11; -- получили 0
+-- (пауза, пока T2 добавляет новую строку)
+SELECT COUNT(*) FROM words WHERE language_id = 11; -- все еще получаем 0, т.к. REPEATABLE READ не позволяет видеть новые строки
 COMMIT;
 ```
 
@@ -263,19 +263,20 @@ INSERT INTO words (language_id, word_text, translation) VALUES (11, 'NewWord', '
 COMMIT;
 ```
 
-Описание: В PostgreSQL уровень изоляции `REPEATABLE READ` может предотвращать *некоторые* виды фантомных чтений (например, для запросов с условием равенства, как показано выше), но для *полной* гарантии отсутствия фантомов во всех сложных сценариях (например, с более сложными условиями или агрегациями) необходим уровень изоляции `SERIALIZABLE`.
+Описание: В PostgreSQL уровень изоляции `REPEATABLE READ` может предотвращать *некоторые* виды фантомных чтений (например, для запросов с условием равенства, как показано выше), но для полной гарантии отсутствия фантомов во всех сложных сценариях (например, с более сложными условиями или агрегациями) необходим уровень изоляции `SERIALIZABLE`.
 Как избавиться: Установить уровень изоляции SERIALIZABLE для Транзакции T1.
 
 Транзакция T1 (уровень изоляции SERIALIZABLE):
 ```sql
 BEGIN ISOLATION LEVEL SERIALIZABLE;
-SELECT COUNT(*) FROM words WHERE language_id = 11; -- Получает 0
--- (Пауза, пока T2 добавляет новую строку)
-SELECT COUNT(*) FROM words WHERE language_id = 11; -- Все еще получает 0.
-COMMIT; -- Если T2 закоммитилась, эта транзакция может быть отменена с ошибкой сериализации.
+SELECT COUNT(*) FROM words WHERE language_id = 11; -- получим 0
+-- (пауза, пока T2 добавляет новую строку)
+SELECT COUNT(*) FROM words WHERE language_id = 11; -- все еще получаем 0
+COMMIT; -- если T2 коммит, то эта транзакция может быть отменена с ошибкой сериализации
 ```
 
 Важно: При уровне SERIALIZABLE, если транзакция T2 добавила строку, которая могла бы изменить результат запроса T1, то T1 может быть откачена с ошибкой сериализации, требуя повторного выполнения. Это гарантирует, что параллельно выполняющиеся сериализуемые транзакции производят тот же результат, что и последовательное их выполнение.
+
 
 
 
